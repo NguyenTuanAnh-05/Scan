@@ -1,0 +1,26 @@
+name: Build iOS Native IPA
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile and Package IPA
+        run: |
+          mkdir -p Payload/CamScanner.app
+          xcrun -sdk iphoneos swiftc CamScanner/*.swift \
+            -target arm64-apple-ios15.0 \
+            -o Payload/CamScanner.app/CamScanner
+          
+          cp CamScanner/Info.plist Payload/CamScanner.app/
+          zip -r CamScanner.ipa Payload
+          
+      - name: Upload File IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: CamScanner-App
+          path: CamScanner.ipa
