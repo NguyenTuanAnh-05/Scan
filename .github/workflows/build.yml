@@ -16,7 +16,7 @@ jobs:
       - name: Compile SwiftUI Native App
         run: |
           SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
-          swiftc -target arm64-apple-ios15.0 \
+          swiftc -target arm64-apple-ios16.0 \
             -sdk "$SDKROOT" \
             -framework SwiftUI \
             -framework UIKit \
