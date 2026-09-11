@@ -21,7 +21,6 @@ jobs:
             -framework SwiftUI \
             -framework UIKit \
             -framework Network \
-            -framework SafariServices \
             -parse-as-library \
             -O \
             CamScanner/CamScannerApp.swift CamScanner/ContentView.swift \
