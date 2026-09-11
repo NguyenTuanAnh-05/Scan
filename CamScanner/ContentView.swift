@@ -1,8 +1,8 @@
 import SwiftUI
 import Network
-import WebKit
+import SafariServices
 
-// Model lưu thông tin thiết bị và danh sách port mở
+// Model lưu thông tin thiết bị và port
 struct ScannedHost: Identifiable {
     let id = UUID()
     let ip: String
@@ -12,7 +12,7 @@ struct ScannedHost: Identifiable {
     }
 }
 
-// Danh mục định danh cổng
+// Định danh dịch vụ
 struct PortService {
     static func getName(for port: Int) -> String {
         switch port {
@@ -37,138 +37,133 @@ struct ContentView: View {
     @State private var isScanning: Bool = false
     @State private var progressText: String = "Sẵn sàng quét mạng"
     
-    // Quản lý hiển thị WebView nhúng
-    @State private var selectedWebURL: URL? = nil
-    @State private var showWebView: Bool = false
+    // Quản lý hiển thị Safari trong app
+    @State private var targetURL: URL? = nil
+    @State private var showSafari: Bool = false
     
-    // Các port cần quét
+    // Các port quét
     private let targetPorts: [Int] = [80, 443, 8080, 8888, 554, 8000, 37777, 22, 23, 3389]
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 14) {
-                // Header
-                VStack(spacing: 4) {
-                    Text("NETWORK & CAMERA SCANNER")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                    Text("Designed by Nguyen Tuan Anh • Tuan Anh Lab")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 8)
+        VStack(spacing: 12) {
+            // Header
+            VStack(spacing: 4) {
+                Text("NETWORK & CAMERA SCANNER")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.blue)
+                Text("Designed by Nguyen Tuan Anh • Tuan Anh Lab")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.top, 10)
 
-                // Input & Action
-                HStack {
-                    TextField("Dải mạng (ví dụ: 192.168.1.)", text: $subnet)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .keyboardType(.numbersAndPunctuation)
-                        .disableAutocorrection(true)
+            // Input bar
+            HStack {
+                TextField("Dải mạng (ví dụ: 192.168.1.)", text: $subnet)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.numbersAndPunctuation)
+                    .disableAutocorrection(true)
 
-                    Button(action: {
-                        hideKeyboard()
-                        startScan()
-                    }) {
-                        if isScanning {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(Color.gray)
-                                .cornerRadius(8)
-                        } else {
-                            Text("Quét")
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .cornerRadius(8)
-                        }
+                Button(action: {
+                    hideKeyboard()
+                    startScan()
+                }) {
+                    if isScanning {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.gray)
+                            .cornerRadius(8)
+                    } else {
+                        Text("Quét")
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(Color.blue)
+                            .cornerRadius(8)
                     }
-                    .disabled(isScanning)
                 }
-                .padding(.horizontal)
+                .disabled(isScanning)
+            }
+            .padding(.horizontal)
 
-                // Status bar
-                HStack {
-                    Text(progressText)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("Tìm thấy: \(scannedDevices.count)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                }
-                .padding(.horizontal)
+            // Status bar
+            HStack {
+                Text(progressText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("Tìm thấy: \(scannedDevices.count)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.blue)
+            }
+            .padding(.horizontal)
 
-                // Device List
-                List(scannedDevices) { host in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: host.isWebAccessible ? "network" : "desktopcomputer")
-                                .foregroundColor(host.isWebAccessible ? .green : .blue)
-                            Text(host.ip)
-                                .font(.system(.body, design: .monospaced))
+            // Device List
+            List(scannedDevices) { host in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: host.isWebAccessible ? "network" : "desktopcomputer")
+                            .foregroundColor(host.isWebAccessible ? .green : .blue)
+                        Text(host.ip)
+                            .font(.system(.body, design: .monospaced))
+                            .fontWeight(.bold)
+                        Spacer()
+                        
+                        if host.isWebAccessible {
+                            Button(action: {
+                                openWebUI(for: host)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "safari")
+                                    Text("Web UI")
+                                }
+                                .font(.caption)
                                 .fontWeight(.bold)
-                            Spacer()
-                            
-                            // Nút truy cập web nhanh nếu có port web
-                            if host.isWebAccessible {
-                                Button(action: {
-                                    openWebAdmin(for: host)
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "safari")
-                                        Text("Web UI")
-                                    }
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.15))
-                                    .foregroundColor(.blue)
-                                    .cornerRadius(6)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundColor(.blue)
+                                .cornerRadius(6)
                             }
+                            .buttonStyle(BorderlessButtonStyle())
                         }
+                    }
 
-                        // Danh sách badge port mở
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                ForEach(host.openPorts, id: \.self) { port in
-                                    Text("\(port) - \(PortService.getName(for: port))")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(badgeColor(for: port).opacity(0.15))
-                                        .foregroundColor(badgeColor(for: port))
-                                        .cornerRadius(4)
-                                }
+                    // Badges Ports
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(host.openPorts, id: \.self) { port in
+                                Text("\(port) - \(PortService.getName(for: port))")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(badgeColor(for: port).opacity(0.15))
+                                    .foregroundColor(badgeColor(for: port))
+                                    .cornerRadius(4)
                             }
                         }
                     }
-                    .padding(.vertical, 4)
                 }
-                .listStyle(InsetGroupedListStyle())
+                .padding(.vertical, 2)
             }
-            .navigationBarHidden(true)
-            .onTapGesture {
-                hideKeyboard()
-            }
-            // Sheet hiển thị giao diện Web nhúng
-            .sheet(isPresented: $showWebView) {
-                if let url = selectedWebURL {
-                    SafariWebViewModal(url: url)
-                }
+            .listStyle(PlainListStyle())
+        }
+        .onTapGesture {
+            hideKeyboard()
+        }
+        .sheet(isPresented: $showSafari) {
+            if let url = targetURL {
+                SafariView(url: url)
             }
         }
     }
 
-    // MARK: - Quét mạng
+    // MARK: - Scan logic
     private func startScan() {
         guard !subnet.isEmpty else { return }
         isScanning = true
@@ -176,7 +171,7 @@ struct ContentView: View {
         progressText = "Đang quét các thiết bị và cổng dịch vụ..."
 
         let group = DispatchGroup()
-        let queue = DispatchQueue(label: "cam.scanner.queue", attributes: .concurrent)
+        let queue = DispatchQueue(label: "scanner.dispatch.queue", attributes: .concurrent)
 
         for i in 1...254 {
             let ip = "\(subnet)\(i)"
@@ -258,7 +253,6 @@ struct ContentView: View {
 
         connection.start(queue: queue)
 
-        // Timeout 1.2s cho mỗi cổng để tối ưu tốc độ
         queue.asyncAfter(deadline: .now() + 1.2) {
             if !isResolved {
                 isResolved = true
@@ -268,15 +262,15 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Tiện ích
-    private func openWebAdmin(for host: ScannedHost) {
+    // MARK: - Helpers
+    private func openWebUI(for host: ScannedHost) {
         let port = host.openPorts.first(where: { [80, 443, 8080, 8888].contains($0) }) ?? 80
         let scheme = (port == 443) ? "https" : "http"
-        let urlString = (port == 80 || port == 443) ? "\(scheme)://\(host.ip)" : "\(scheme)://\(host.ip):\(port)"
+        let urlStr = (port == 80 || port == 443) ? "\(scheme)://\(host.ip)" : "\(scheme)://\(host.ip):\(port)"
         
-        if let url = URL(string: urlString) {
-            self.selectedWebURL = url
-            self.showWebView = true
+        if let url = URL(string: urlStr) {
+            self.targetURL = url
+            self.showSafari = true
         }
     }
 
@@ -294,33 +288,15 @@ struct ContentView: View {
     }
 }
 
-// Modal mở Web View ngay trong ứng dụng
-struct SafariWebViewModal: View {
-    let url: URL
-    @Environment(\.presentationMode) var presentationMode
-
-    var body: some View {
-        NavigationView {
-            WebViewContainer(url: url)
-                .navigationBarTitle(Text(url.absoluteString), displayMode: .inline)
-                .navigationBarItems(trailing: Button("Đóng") {
-                    presentationMode.wrappedValue.dismiss()
-                })
-        }
-    }
-}
-
-struct WebViewContainer: UIViewRepresentable {
+// Trình duyệt Safari nhúng chuẩn iOS (bảo mật, tự xử lý chứng chỉ, không lỗi biên dịch)
+struct SafariView: UIViewControllerRepresentable {
     let url: URL
 
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
-        return webView
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = false
+        return SFSafariViewController(url: url, configuration: config)
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        let request = URLRequest(url: url)
-        uiView.load(request)
-    }
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
