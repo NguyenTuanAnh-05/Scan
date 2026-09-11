@@ -1,25 +1,41 @@
 name: Build iOS Native IPA
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile and Package IPA
+      - name: Compile SwiftUI Native App
+        run: |
+          SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          swiftc -target arm64-apple-ios15.0 \
+            -sdk "$SDKROOT" \
+            -framework SwiftUI \
+            -framework UIKit \
+            -framework Network \
+            -framework WebKit \
+            -parse-as-library \
+            -O \
+            CamScanner/CamScannerApp.swift CamScanner/ContentView.swift \
+            -o CamScannerBinary
+
+      - name: Package Payload and IPA
         run: |
           mkdir -p Payload/CamScanner.app
-          xcrun -sdk iphoneos swiftc CamScanner/*.swift \
-            -target arm64-apple-ios15.0 \
-            -o Payload/CamScanner.app/CamScanner
-          
-          cp CamScanner/Info.plist Payload/CamScanner.app/
+          cp CamScannerBinary Payload/CamScanner.app/CamScanner
+          cp CamScanner/Info.plist Payload/CamScanner.app/Info.plist
+          chmod +x Payload/CamScanner.app/CamScanner
           zip -r CamScanner.ipa Payload
-          
-      - name: Upload File IPA
+
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: CamScanner-App
