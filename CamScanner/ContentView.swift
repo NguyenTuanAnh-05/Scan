@@ -45,7 +45,7 @@ struct ContentView: View {
             VStack(spacing: 4) {
                 Text("NETWORK & CAMERA SCANNER")
                     .font(.headline)
-                    .fontWeight(.bold)
+                    .bold()
                     .foregroundColor(.blue)
                 Text("Designed by Nguyen Tuan Anh • Tuan Anh Lab")
                     .font(.caption2)
@@ -72,7 +72,7 @@ struct ContentView: View {
                             .cornerRadius(8)
                     } else {
                         Text("Quét")
-                            .fontWeight(.semibold)
+                            .font(.system(.body, design: .default).weight(.semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 18)
                             .padding(.vertical, 8)
@@ -91,7 +91,7 @@ struct ContentView: View {
                 Spacer()
                 Text("Tìm thấy: \(scannedDevices.count)")
                     .font(.caption)
-                    .fontWeight(.bold)
+                    .bold()
                     .foregroundColor(.blue)
             }
             .padding(.horizontal)
@@ -103,7 +103,7 @@ struct ContentView: View {
                             .foregroundColor(host.webURL != nil ? .green : .blue)
                         Text(host.ip)
                             .font(.system(.body, design: .monospaced))
-                            .fontWeight(.bold)
+                            .bold()
                         Spacer()
                         
                         if let url = host.webURL {
@@ -115,7 +115,7 @@ struct ContentView: View {
                                     Text("Web Admin")
                                 }
                                 .font(.caption)
-                                .fontWeight(.bold)
+                                .bold()
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(Color.blue.opacity(0.15))
@@ -130,7 +130,7 @@ struct ContentView: View {
                         HStack(spacing: 6) {
                             ForEach(host.openPorts, id: \.self) { port in
                                 Text("\(port) - \(PortService.getName(for: port))")
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(.system(size: 10, weight: .bold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 3)
                                     .background(badgeColor(for: port).opacity(0.15))
